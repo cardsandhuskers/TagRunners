@@ -1,0 +1,28 @@
+name: Tag
+version: '${project.version}'
+main: io.github.cardsandhuskers.tag.Tag
+api-version: 1.19
+depend: [PlaceholderAPI, Teams, ProtocolLib]
+author: [cardsandhuskers]
+commands:
+  startTag:
+    description: starts the game
+    command: /<command> [multiplier]
+  setTagWorldSpawn:
+    description: sets point where players enter the world
+    command: /<command>
+  setTagArenaSpawn:
+    description: sets the spawn point for the specified arena and team
+    command: /<command> [arena] [side]
+  setTagKitSpawn:
+    description: sets the spawn point for the kit selection room for the specified arena and team
+    command: /<command> [arena] [side]
+  setTagLobby:
+    description: sets the location of the lobby
+    command: /<command>
+  setTagArenaWall:
+    description: sets the location of the bottom center block of the drop wall
+    usage: /<command> [arena] [side]
+  setTagHunterChamber:
+    description: sets the chamber for choosing the hunter
+    usage: /<command> [arena] [side]

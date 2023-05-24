@@ -1,0 +1,21 @@
+PregameTime: 15
+TagSelectionTime: 15
+PreroundTime: 5
+RoundTime: 60
+RoundOverTime: 5
+GameOverTime: 20
+
+#points for surviving every 10 seconds as a runner
+survivalPoints: 2
+#points for surviving to the end as a runner
+fullSurvivalPoints: 60
+#points for tagging a runner
+tagPoints: 6
+#points lost per 10 seconds the runner survives
+tagPointsDropoff: 1
+#points for tagging all runners
+allTagPoints: 42
+#points lost per 10 seconds elapsed
+allTagPointsDropoff: 1
+#points if your hunter beats your opponent's hunter in tagging all 3 players
+hunterTagFirstPoints: 120
