@@ -97,7 +97,7 @@ public class GlowPacketListener {
 
                 try {
                     protocolManager.sendServerPacket(player, packet);
-                } catch (InvocationTargetException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -191,7 +191,7 @@ public class GlowPacketListener {
 
                 try {
                     protocolManager.sendServerPacket(player, packet);
-                } catch (InvocationTargetException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }

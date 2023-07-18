@@ -3,6 +3,7 @@ version: '${project.version}'
 main: io.github.cardsandhuskers.tag.Tag
 api-version: 1.19
 depend: [PlaceholderAPI, Teams, ProtocolLib]
+softdepend: [Multiverse-Core]
 author: [cardsandhuskers]
 commands:
   startTag:
