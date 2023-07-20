@@ -40,8 +40,8 @@ public final class Tag extends JavaPlugin {
              * We inform about the fact that PlaceholderAPI isn't installed and then
              * disable this plugin to prevent issues.
              */
-            System.out.println("Could not find PlaceholderAPI! This plugin is required.");
-            Bukkit.getPluginManager().disablePlugin(this);
+            System.out.println("Could not find PlaceholderAPI!");
+            //Bukkit.getPluginManager().disablePlugin(this);
         }
 
         handler = Teams.handler;

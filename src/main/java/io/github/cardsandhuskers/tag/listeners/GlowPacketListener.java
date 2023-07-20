@@ -113,6 +113,8 @@ public class GlowPacketListener {
                     //System.out.println(event.getPlayer().getDisplayName() + ": " + isGlowing + "\n\n");
                     //for each player the recipient of the packet should see glowing
                     boolean found = false;
+
+                    //check each player that should be glowing to see if the packet is for that player
                     for (Player player : isGlowing) {
                         //entityID is a unique identifier for each entity
 
@@ -141,6 +143,8 @@ public class GlowPacketListener {
                             break;
                         }
                     }
+
+                    //if the player isn't in packet, they're not meant to be glowing and make sure to send the packet without a glow
                     if (!found) {
                         if (event.getPacketType() == PacketType.Play.Server.ENTITY_METADATA) {
                             List<WrappedWatchableObject> watchableObjectList = event.getPacket().getWatchableCollectionModifier().read(0);
