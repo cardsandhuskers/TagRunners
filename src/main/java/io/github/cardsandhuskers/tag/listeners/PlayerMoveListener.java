@@ -19,10 +19,10 @@ import static io.github.cardsandhuskers.tag.Tag.handler;
 
 public class PlayerMoveListener implements Listener {
     HashMap<Team, Player> currentHunters;
-    private HashMap<Player, Integer> hunterRounds;
-    private ArrayList<Location> hunterBoxes;
+    private final HashMap<Player, Integer> hunterRounds;
+    private final ArrayList<Location> hunterBoxes;
     private int side1Z, side2Z;
-    private Tag plugin;
+    private final Tag plugin;
     public PlayerMoveListener(HashMap<Team, Player> currentHunters, HashMap<Player, Integer> hunterRounds, Tag plugin) {
         this.plugin = plugin;
         this.currentHunters = currentHunters;

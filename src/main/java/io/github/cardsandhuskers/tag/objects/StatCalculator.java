@@ -18,7 +18,7 @@ import static io.github.cardsandhuskers.tag.Tag.tags;
 import static io.github.cardsandhuskers.teams.Teams.handler;
 
 public class StatCalculator {
-    private Tag plugin;
+    private final Tag plugin;
     private ArrayList<PlayerStatsHolder> playerStatsHolders;
     private ArrayList<SingleGameKillsHolder> sgKillsHolders;
 

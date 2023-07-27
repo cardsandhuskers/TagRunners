@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 public class SetArenaSpawnCommand implements CommandExecutor {
 
 
-    private Tag plugin;
+    private final Tag plugin;
     public SetArenaSpawnCommand(Tag plugin) {
         this.plugin = plugin;
     }

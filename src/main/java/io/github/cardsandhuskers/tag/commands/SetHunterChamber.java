@@ -10,7 +10,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 public class SetHunterChamber implements CommandExecutor {
-    private Tag plugin;
+    private final Tag plugin;
 
     public SetHunterChamber(Tag plugin) {
         this.plugin = plugin;

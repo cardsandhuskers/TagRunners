@@ -1,27 +1,17 @@
 package io.github.cardsandhuskers.tag.handlers;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.WrappedDataWatcher;
 import io.github.cardsandhuskers.tag.Tag;
-import io.github.cardsandhuskers.tag.listeners.GlowPacketListener;
-import io.github.cardsandhuskers.tag.listeners.PlayerAttackListener;
-import io.github.cardsandhuskers.tag.listeners.PlayerLeaveListener;
+import io.github.cardsandhuskers.tag.listeners.*;
 import io.github.cardsandhuskers.tag.objects.Bracket;
 import io.github.cardsandhuskers.tag.objects.Countdown;
+import io.github.cardsandhuskers.tag.objects.GameMessages;
 import io.github.cardsandhuskers.teams.objects.Team;
-import io.github.cardsandhuskers.teams.objects.TempPointsHolder;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 
 import static io.github.cardsandhuskers.tag.Tag.*;
@@ -29,19 +19,19 @@ import static io.github.cardsandhuskers.teams.Teams.handler;
 import static org.bukkit.Bukkit.getServer;
 
 public class GameStageHandler {
-    private Tag plugin;
+    private final Tag plugin;
     int totalRounds = 0;
-    private HashMap<Team, Player> currentHunters;
-    private Bracket bracket;
-
+    private final HashMap<Team, Player> currentHunters;
+    private final Bracket bracket;
     private Team[][] matchups;
     //track how many opportunities each player has to be a hunter
-    private HashMap<Player, Integer> hunterRounds;
-    private ArrayList<Player> aliveRunners;
+    private final HashMap<Player, Integer> hunterRounds;
+    private final ArrayList<Player> aliveRunners;
     private Countdown roundTimer;
-    private PlayerDeathHandler deathHandler;
-    private ArenaWallHandler wallHandler;
-    private GlowPacketListener glowPacketListener;
+    private final PlayerDeathHandler deathHandler;
+    private ArenaHandler arenaHandler;
+    private final GlowHandler glowHandler;
+    //private GlowPacketListener glowPacketListener;
 
     public GameStageHandler(Tag plugin, HashMap<Team, Player> currentHunters, HashMap<Player, Integer> hunterRounds) {
         this.plugin = plugin;
@@ -51,7 +41,14 @@ public class GameStageHandler {
         bracket = new Bracket();
         this.deathHandler = new PlayerDeathHandler(plugin, this, aliveRunners);
         getServer().getPluginManager().registerEvents(new PlayerAttackListener(plugin, currentHunters, aliveRunners, deathHandler), plugin);
+        getServer().getPluginManager().registerEvents(new PlayerJoinListener(plugin), plugin);
         getServer().getPluginManager().registerEvents(new PlayerLeaveListener(plugin, deathHandler), plugin);
+        getServer().getPluginManager().registerEvents(new PlayerDamageListener(), plugin);
+        getServer().getPluginManager().registerEvents(new PlayerMoveListener(currentHunters, hunterRounds, plugin), plugin);
+        getServer().getPluginManager().registerEvents(new InventoryClickListener(), plugin);
+
+        glowHandler = new GlowHandler(plugin, aliveRunners, matchups, currentHunters, this);
+        getServer().getPluginManager().registerEvents(new PlayerClickListener(glowHandler), plugin);
     }
 
 
@@ -73,8 +70,9 @@ public class GameStageHandler {
             p.setHealth(20);
             p.setFoodLevel(20);
         }
-        wallHandler = new ArenaWallHandler(plugin);
-        glowPacketListener = new GlowPacketListener(plugin, aliveRunners, currentHunters, this);
+        arenaHandler = new ArenaHandler(plugin);
+
+        //glowPacketListener = new GlowPacketListener(plugin, aliveRunners, currentHunters, this);
         startRound();
     }
 
@@ -85,104 +83,24 @@ public class GameStageHandler {
         currentHunters.clear();
         aliveRunners.clear();
         deathHandler.unopposed = null;
-        teleport(true);
+        arenaHandler.teleportPlayers(true, matchups, deathHandler, currentHunters, hunterRounds);
         hunterTimer();
 
-
     }
 
-    public void teleport(boolean kit) {
-        String add = "";
-        if(kit) add = "Kit";
-        int teamCounter = 1;
-        int arenaCounter = 1;
-        while(plugin.getConfig().getLocation("Arena" + add + "Spawns.Arena" + teamCounter + ".1") != null) {
-            if(matchups.length < teamCounter) {
-                break;
-            }
 
-            //System.out.println(teamCounter);
-            Team teamA = matchups[teamCounter-1][0];
-            Team teamB = matchups[teamCounter-1][1];
-
-            if(!kit && teamA.getTeamName().equalsIgnoreCase("DUMMYTEAM")) {
-                deathHandler.unopposed = teamB;
-            } else if(!kit && teamB.getTeamName().equalsIgnoreCase("DUMMYTEAM")) {
-                deathHandler.unopposed = teamA;
-            }
-            //System.out.println(teamA);
-            //System.out.println(teamB);
-
-            Location aRunners = plugin.getConfig().getLocation("Arena" + add + "Spawns.Arena" + arenaCounter + "." + 2);
-            Location bHunter = plugin.getConfig().getLocation("Arena" + add + "Spawns.Arena" + arenaCounter + "." + 1);
-
-            arenaCounter++;
-
-            Location bRunners = plugin.getConfig().getLocation("Arena" + add + "Spawns.Arena" + arenaCounter + "." + 2);
-            Location aHunter = plugin.getConfig().getLocation("Arena" + add + "Spawns.Arena" + arenaCounter + "." + 1);
-
-            for(Player p:teamA.getOnlinePlayers()) {
-                if(p.equals(currentHunters.get(teamA)) && kit == false) p.teleport(aHunter);
-                else p.teleport(aRunners);
-                if(kit) {
-                    p.sendTitle("Opponent: ", teamB.color + teamB.getTeamName(), 5, 20, 5);
-                    p.sendMessage("Round " + round + ": " + teamA.color + teamA.getTeamName() + ChatColor.RESET + " vs. " + teamB.color + teamB.getTeamName());
-                } else {
-                    if(p.equals(currentHunters.get(teamA))) {
-                        p.sendMessage("Hunts Remaining: " + (hunterRounds.get(p)-1));
-                    }
-                }
-                p.setGameMode(GameMode.ADVENTURE);
-            }
-            for(Player p:teamB.getOnlinePlayers()) {
-                if(p.equals(currentHunters.get(teamB)) && kit == false) p.teleport(bHunter);
-                else p.teleport(bRunners);
-                if(kit) {
-                    p.sendTitle("Opponent: ", teamA.color + teamB.getTeamName(), 5, 20, 5);
-                    p.sendMessage("Round " + round + ": " + teamB.color + teamB.getTeamName() + ChatColor.RESET + " vs. " + teamA.color + teamA.getTeamName());
-                } else {
-                    if(p.equals(currentHunters.get(teamB))) {
-                        p.sendMessage("Hunts Remaining: " + (hunterRounds.get(p)-1));
-                    }
-                }
-                p.setGameMode(GameMode.ADVENTURE);
-            }
-            arenaCounter++;
-            teamCounter++;
-        }
-        if(kit) {
-
-            teamCounter = 1;
-            while(plugin.getConfig().getLocation("Arena" + add + "Spawns.Arena" + teamCounter + ".1") != null) {
-                //side 1
-                Location side1 = plugin.getConfig().getLocation("ArenaHunterChambers.Arena" + teamCounter + ".1");
-                for (int i = 0; i < 4; i++) {
-                    Location glassLoc = new Location(side1.getWorld(), side1.getX(), side1.getY() + i, side1.getZ() + 1);
-                    glassLoc.getBlock().setType(Material.AIR);
-                }
-                //side 2
-                Location side2 = plugin.getConfig().getLocation("ArenaHunterChambers.Arena" + teamCounter + ".2");
-                for (int i = 0; i < 4; i++) {
-                    Location glassLoc = new Location(side2.getWorld(), side2.getX(), side2.getY() + i, side2.getZ() - 1);
-                    glassLoc.getBlock().setType(Material.AIR);
-                }
-                teamCounter++;
-            }
-
-        }
-    }
 
     /**
      * Select team's hunter
      */
     public void hunterTimer() {
         int totalTime = plugin.getConfig().getInt("TagSelectionTime");
-        Countdown timer = new Countdown((JavaPlugin)plugin,
+        Countdown timer = new Countdown(plugin,
                 totalTime,
                 //Timer Start
                 () -> {
                     gameState = Tag.GameState.KIT_SELECTION;
-                    wallHandler.buildWalls();
+                    arenaHandler.buildWalls();
 
                 },
 
@@ -205,55 +123,6 @@ public class GameStageHandler {
                         //in case no one has hunting abilities left
                         if(!currentHunters.containsKey(t)) currentHunters.put(t, t.getOnlinePlayers().get(0));
 
-                    }
-                    for(Team t: handler.getTeams()) {
-                        for(Player p:t.getOnlinePlayers()) {
-                            Team playerTeam = handler.getPlayerTeam(p);
-                            if(playerTeam == null) {
-
-                            }
-                            else {
-                                Team opponentTeam = null;
-                                for (Team[] matchup : matchups) {
-                                    if (matchup[0].equals(playerTeam)) opponentTeam = matchup[1];
-                                    if (matchup[1].equals(playerTeam)) opponentTeam = matchup[0];
-                                }
-
-                                //dummy team
-                                //System.out.println("OPPTEAM: " + opponentTeam);
-
-                                if(opponentTeam == null || opponentTeam.getTeamName().equalsIgnoreCase("DUMMYTEAM")) {
-                                    if(currentHunters.get(playerTeam).equals(p)) {
-                                        p.sendMessage(ChatColor.BOLD + "You will be hunting no one!");
-                                        p.sendTitle("No Opponent", "", 5, 50, 5);
-
-                                    } else {
-                                        //player is runner
-                                        p.sendMessage("You will be hunted by no one!");
-                                        p.sendTitle("No Hunter!", "", 5, 50, 5);
-                                    }
-                                } else {
-                                    //player is hunter
-                                    if(!currentHunters.containsKey(playerTeam)) continue;
-                                    if (currentHunters.get(playerTeam).equals(p)) {
-                                        p.sendMessage(ChatColor.BOLD + "You will be hunting " + opponentTeam.color + opponentTeam.getTeamName());
-                                        String members = "";
-                                        for(Player pl:Bukkit.getOnlinePlayers()) {
-                                            if(handler.getPlayerTeam(pl) != null && handler.getPlayerTeam(pl).equals(opponentTeam) && !currentHunters.containsKey(pl)) members += pl.getDisplayName() + ", ";
-                                        }
-                                        p.sendMessage("Players: " + opponentTeam.color + members);
-                                        p.sendTitle("Chase Down:", opponentTeam.color + opponentTeam.getTeamName(), 5, 50, 5);
-
-                                    } else {
-                                        //player is runner
-                                        Player hunter = currentHunters.get(opponentTeam);
-                                        //System.out.println("HUNTER: " + hunter);
-                                        p.sendMessage("You will be hunted by: " + opponentTeam.color + hunter.getDisplayName());
-                                        p.sendTitle("Hunter:", opponentTeam.color + hunter.getDisplayName(), 5, 50, 5);
-                                    }
-                                }
-                            }
-                        }
                     }
                     preround();
 
@@ -286,15 +155,18 @@ public class GameStageHandler {
      */
     public void preround() {
         int totalTime = plugin.getConfig().getInt("PreroundTime");
-        Countdown timer = new Countdown((JavaPlugin)plugin,
+        Countdown timer = new Countdown(plugin,
                 totalTime,
                 //Timer Start
                 () -> {
                     gameState = Tag.GameState.ROUND_STARTING;
-                    teleport(false);
+
                     for(Team t: handler.getTeams()) {
                         for(Player p:t.getOnlinePlayers()) {
-                            if(!currentHunters.get(t).equals(p)) aliveRunners.add(p);
+                            if(!currentHunters.get(t).equals(p)) {
+                                aliveRunners.add(p);
+                                glowHandler.giveRunnerVision(p, Material.ENDER_PEARL);
+                            }
                             p.setGameMode(GameMode.ADVENTURE);
                             p.setSaturation(20);
                             p.setHealth(20);
@@ -303,9 +175,9 @@ public class GameStageHandler {
                             p.setSwimming(false);
                         }
                     }
-                    //System.out.println(currentHunters);
-                    //System.out.println(aliveRunners);
+                    arenaHandler.teleportPlayers(false, matchups, deathHandler, currentHunters, hunterRounds);
 
+                    glowHandler.enableGlow();
                 },
 
                 //Timer End
@@ -317,26 +189,7 @@ public class GameStageHandler {
                             p.setSwimming(false);
                         }
                     }
-                    var protocolManager = ProtocolLibrary.getProtocolManager();
-
-                    /*for(Player recipient:Bukkit.getOnlinePlayers()) {
-                        for(Player target:Bukkit.getOnlinePlayers()) {
-                            PacketContainer packet = protocolManager.createPacket(PacketType.Play.Server.ENTITY_METADATA);
-                            packet.getIntegers().write(0, target.getEntityId()); //Set packet's entity id
-                            WrappedDataWatcher watcher = new WrappedDataWatcher(); //Create data watcher, the Entity Metadata packet requires this
-                            WrappedDataWatcher.Serializer serializer = WrappedDataWatcher.Registry.get(Byte.class); //Found this through google, needed for some stupid reason
-                            watcher.setEntity(target); //Set the new data watcher's target
-                            watcher.setObject(0, serializer, (byte) (0x40)); //Set status to glowing, found on protocol page
-                            packet.getWatchableCollectionModifier().write(0, watcher.getWatchableObjects()); //Make the packet's datawatcher the one we created
-
-                            try {
-                                protocolManager.sendServerPacket(recipient, packet);
-                            } catch (InvocationTargetException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }*/
-                    wallHandler.deleteWalls();
+                    arenaHandler.deleteWalls();
                     roundActive();
                 },
 
@@ -364,13 +217,11 @@ public class GameStageHandler {
      */
     public void roundActive() {
         int totalTime = plugin.getConfig().getInt("RoundTime");
-        roundTimer = new Countdown((JavaPlugin)plugin,
+        roundTimer = new Countdown(plugin,
                 totalTime,
                 //Timer Start
                 () -> {
                     gameState = Tag.GameState.ROUND_ACTIVE;
-
-                    glowPacketListener.enableGlow();
                 },
 
                 //Timer End
@@ -408,21 +259,20 @@ public class GameStageHandler {
     public void roundOver() {
         double survivalPoints = plugin.getConfig().getInt("fullSurvivalPoints") * multiplier;
         for(Player p:aliveRunners) {
-            p.sendMessage("[+" +  ChatColor.YELLOW + "" + ChatColor.BOLD + survivalPoints + ChatColor.RESET + "] You survived to the end of the round!");
             handler.getPlayerTeam(p).addTempPoints(p, survivalPoints);
+            glowHandler.takeRunnerVision(p);
         }
-        for(Player p:Bukkit.getOnlinePlayers()) p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1,2);
-        Bukkit.broadcastMessage("Round Over!");
 
+        GameMessages.roundOverAnnouncements(aliveRunners, currentHunters, (int)survivalPoints, deathHandler.winningTeams, matchups);
+        glowHandler.disableGlow();
         if(roundTimer != null) roundTimer.cancelTimer();
 
         int totalTime = plugin.getConfig().getInt("RoundOverTime");
-        Countdown timer = new Countdown((JavaPlugin)plugin,
+        Countdown timer = new Countdown(plugin,
                 totalTime,
                 //Timer Start
                 () -> {
                     gameState = Tag.GameState.ROUND_OVER;
-                    glowPacketListener.disableGlow();
                 },
 
                 //Timer End
@@ -460,7 +310,7 @@ public class GameStageHandler {
     public void gameOver() {
 
         int totalTime = plugin.getConfig().getInt("GameOverTime");
-        Countdown timer = new Countdown((JavaPlugin)plugin,
+        Countdown timer = new Countdown(plugin,
                 totalTime,
                 //Timer Start
                 () -> {
@@ -497,77 +347,9 @@ public class GameStageHandler {
                         }
                     }
 
-                    if (t.getSecondsLeft() == t.getTotalSeconds() - 5) {
-                        for (Team team : handler.getTeams()) {
-                            ArrayList<TempPointsHolder> tempPointsList = new ArrayList<>();
-                            for (Player p : team.getOnlinePlayers()) {
-                                if (team.getPlayerTempPoints(p) != null) {
-                                    tempPointsList.add(team.getPlayerTempPoints(p));
-                                }
-                            }
-                            Collections.sort(tempPointsList, Comparator.comparing(TempPointsHolder::getPoints));
-                            Collections.reverse(tempPointsList);
-
-                            for (Player p : team.getOnlinePlayers()) {
-                                p.sendMessage(ChatColor.DARK_AQUA + "" + ChatColor.BOLD + "Your Team Standings:");
-                                p.sendMessage(ChatColor.DARK_BLUE + "------------------------------");
-                                int number = 1;
-                                for (TempPointsHolder h : tempPointsList) {
-                                    p.sendMessage(number + ". " + handler.getPlayerTeam(p).color + h.getPlayer().getName() + ChatColor.RESET + "    Points: " + (int)h.getPoints());
-                                    number++;
-                                }
-                                p.sendMessage(ChatColor.DARK_BLUE + "------------------------------\n");
-                                p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
-                            }
-                        }
-                    }
-                    if (t.getSecondsLeft() == t.getTotalSeconds() - 10) {
-                        ArrayList<TempPointsHolder> tempPointsList = new ArrayList<>();
-                        for (Team team : handler.getTeams()) {
-                            for (Player p : team.getOnlinePlayers()) {
-                                tempPointsList.add(team.getPlayerTempPoints(p));
-                                p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
-                            }
-                        }
-                        Collections.sort(tempPointsList, Comparator.comparing(TempPointsHolder::getPoints));
-                        Collections.reverse(tempPointsList);
-
-                        int max;
-                        if (tempPointsList.size() >= 5) {
-                            max = 4;
-                        } else {
-                            max = tempPointsList.size() - 1;
-                        }
-
-                        Bukkit.broadcastMessage("\n" + ChatColor.RED + "" + ChatColor.BOLD + "Top 5 Players:");
-                        Bukkit.broadcastMessage(ChatColor.DARK_RED + "------------------------------");
-                        int number = 1;
-                        for (int i = 0; i <= max; i++) {
-                            TempPointsHolder h = tempPointsList.get(i);
-                            Bukkit.broadcastMessage(number + ". " + handler.getPlayerTeam(h.getPlayer()).color + h.getPlayer().getName() + ChatColor.RESET + "    Points: " + (int)h.getPoints());
-                            number++;
-                        }
-                        Bukkit.broadcastMessage(ChatColor.DARK_RED + "------------------------------");
-                    }
-
-                    if (t.getSecondsLeft() == t.getTotalSeconds() - 15) {
-                        ArrayList<Team> teamList = handler.getTempPointsSortedList();
-
-                        Bukkit.broadcastMessage(ChatColor.BLUE + "" + ChatColor.BOLD + "Team Performance:");
-                        Bukkit.broadcastMessage(ChatColor.GREEN + "------------------------------");
-                        int counter = 1;
-                        for (Team team : teamList) {
-                            Bukkit.broadcastMessage(counter + ". " + team.color + ChatColor.BOLD + team.getTeamName() + ChatColor.RESET + " Points: " + (int)team.getTempPoints());
-                            counter++;
-                        }
-                        Bukkit.broadcastMessage(ChatColor.GREEN + "------------------------------");
-                        for (Player p : Bukkit.getOnlinePlayers()) {
-                            p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
-                        }
-                    }
-
-
-
+                    if(t.getSecondsLeft() == t.getTotalSeconds() - 1) GameMessages.announceTopPlayers();
+                    if(t.getSecondsLeft() == t.getTotalSeconds() - 6) GameMessages.announceTeamPlayers();
+                    if(t.getSecondsLeft() == t.getTotalSeconds() - 11) GameMessages.announceTeamLeaderboard();
 
                 }
         );
@@ -587,6 +369,9 @@ public class GameStageHandler {
     public Player getHunter(Team t) {
         if(!currentHunters.containsKey(t)) return null;
         return currentHunters.get(t);
+    }
+    public ArrayList<Player> getAliveRunners() {
+        return aliveRunners;
     }
 
 }

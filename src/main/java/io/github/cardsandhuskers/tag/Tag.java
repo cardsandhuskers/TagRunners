@@ -37,8 +37,7 @@ public final class Tag extends JavaPlugin {
 
         } else {
             /*
-             * We inform about the fact that PlaceholderAPI isn't installed and then
-             * disable this plugin to prevent issues.
+             * We inform about the fact that PlaceholderAPI isn't installed.
              */
             System.out.println("Could not find PlaceholderAPI!");
             //Bukkit.getPluginManager().disablePlugin(this);
@@ -60,6 +59,7 @@ public final class Tag extends JavaPlugin {
         getCommand("setTagLobby").setExecutor(new SetLobbyCommand(this));
         getCommand("setTagArenaWall").setExecutor(new SetArenaWallCommand(this));
         getCommand("setTagHunterChamber").setExecutor(new SetHunterChamber(this));
+        getCommand("reloadTag").setExecutor(new ReloadConfigCommand(this));
 
         statCalculator = new StatCalculator(this);
         try {

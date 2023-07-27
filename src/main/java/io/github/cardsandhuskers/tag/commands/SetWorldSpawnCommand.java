@@ -9,7 +9,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 public class SetWorldSpawnCommand implements CommandExecutor {
-    private Tag plugin;
+    private final Tag plugin;
 
     public SetWorldSpawnCommand(Tag plugin) {
         this.plugin = plugin;

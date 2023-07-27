@@ -19,12 +19,14 @@ public class PlayerDeathHandler {
     //have all runners on a team been killed
     HashMap<Team, Boolean> allEliminated;
     ArrayList<Player> aliveRunners;
+    ArrayList<Team> winningTeams;
     Team unopposed;
     public PlayerDeathHandler(Tag plugin, GameStageHandler gameStageHandler, ArrayList<Player> aliveRunners) {
         this.plugin = plugin;
         this.gameStageHandler = gameStageHandler;
         this.aliveRunners = aliveRunners;
         allEliminated = new HashMap<>();
+        winningTeams = new ArrayList<>();
     }
 
 
@@ -72,7 +74,10 @@ public class PlayerDeathHandler {
         handler.getPlayerTeam(attacker).addTempPoints(attacker, tagPoints);
 
         for(Player p:handler.getPlayerTeam(attacked).getOnlinePlayers()) {
-            if(aliveRunners.contains(p)) hasAlivePlayers = true;
+            if (aliveRunners.contains(p)) {
+                hasAlivePlayers = true;
+                break;
+            }
         }
         if(tags.containsKey(attacker)) tags.put(attacker, tags.get(attacker) + 1);
         else tags.put(attacker, 1);
@@ -94,8 +99,8 @@ public class PlayerDeathHandler {
                 allEliminated.put(handler.getPlayerTeam(attacked), true);
                 for(Player p:attackerTeam.getOnlinePlayers()) {
                     p.sendMessage("Your hunter eliminated the opposing runners second, no bonus points.");
-                    if(roundWins.containsKey(p)) roundWins.put(p, roundWins.get(p) + 1);
-                    else roundWins.put(p, 1);
+                    //if(roundWins.containsKey(p)) roundWins.put(p, roundWins.get(p) + 1);
+                    //else roundWins.put(p, 1);
                 }
 
             } else {
@@ -106,6 +111,7 @@ public class PlayerDeathHandler {
                     p.sendMessage("[+" + ChatColor.YELLOW + "" + ChatColor.BOLD + (int)playerPoints + ChatColor.RESET + "] Your hunter eliminated the opposing runners first!");
                     if(roundWins.containsKey(p)) roundWins.put(p, roundWins.get(p) + 1);
                     else roundWins.put(p, 1);
+                    winningTeams.add(attackerTeam);
                 }
 
                 allEliminated.put(handler.getPlayerTeam(attacked), true);
@@ -135,6 +141,7 @@ public class PlayerDeathHandler {
     public void resetEliminations() {
         allEliminated.clear();
         for(Team t: handler.getTeams()) allEliminated.put(t, false);
+        winningTeams.clear();
     }
 
     /**
@@ -142,6 +149,6 @@ public class PlayerDeathHandler {
      * @param p - player to remove
      */
     public void removePlayer(Player p) {
-        if(aliveRunners.contains(p)) aliveRunners.remove(p);
+        aliveRunners.remove(p);
     }
 }

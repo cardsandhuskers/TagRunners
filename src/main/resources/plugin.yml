@@ -27,3 +27,6 @@ commands:
   setTagHunterChamber:
     description: sets the chamber for choosing the hunter
     usage: /<command> [arena] [side]
+  reloadTag:
+    description: reloads the config for the game
+    command: /<command>

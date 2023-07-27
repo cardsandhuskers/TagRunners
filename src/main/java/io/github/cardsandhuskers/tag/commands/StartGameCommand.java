@@ -1,23 +1,24 @@
 package io.github.cardsandhuskers.tag.commands;
 
-import io.github.cardsandhuskers.tag.handlers.GameStageHandler;
-import io.github.cardsandhuskers.tag.listeners.*;
-import io.github.cardsandhuskers.tag.objects.Countdown;
-import io.github.cardsandhuskers.teams.objects.Team;
 import io.github.cardsandhuskers.tag.Tag;
-import org.apache.commons.lang3.StringUtils;
+import io.github.cardsandhuskers.tag.handlers.GameStageHandler;
+import io.github.cardsandhuskers.tag.listeners.PlayerDamageListener;
+import io.github.cardsandhuskers.tag.listeners.PlayerMoveListener;
+import io.github.cardsandhuskers.tag.objects.Countdown;
+import io.github.cardsandhuskers.tag.objects.GameMessages;
+import io.github.cardsandhuskers.teams.objects.Team;
 import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import static io.github.cardsandhuskers.tag.Tag.*;
+import static io.github.cardsandhuskers.tag.Tag.handler;
+import static io.github.cardsandhuskers.tag.Tag.multiplier;
 import static org.bukkit.Bukkit.getServer;
 
 public class StartGameCommand implements CommandExecutor {
@@ -26,32 +27,9 @@ public class StartGameCommand implements CommandExecutor {
     HashMap<Team, Player> currentHunters;
     public HashMap<Player, Integer> hunterRounds;
     public ArrayList<Player> aliveRunners;
-    private GameStageHandler gameStageHandler;
-    private final String GAME_DESCRIPTION, POINTS_DESCRIPTION;
+    public GameStageHandler gameStageHandler;
     public StartGameCommand(Tag plugin) {
         this.plugin = plugin;
-        GAME_DESCRIPTION =
-                ChatColor.STRIKETHROUGH + "----------------------------------------\n" + ChatColor.RESET +
-                StringUtils.center(ChatColor.DARK_AQUA + "" + ChatColor.BOLD + "Tag Runners", 30) +
-                ChatColor.BLUE + "" + ChatColor.BOLD + "\nHow To Play:" +
-                ChatColor.RESET + "\nYou will be placed in an arena against the other teams in a round robin format." +
-                "\nYou must choose a player to be the hunter, while the rest will be runners." +
-                "\nTo hunt, walk into the jar. Each player has a limited amount of hunting opportunities, so choose wisely." +
-                "\nYour hunter must tag all the opposing runners before your opposing hunter tags all of you to get points" +
-                "\n----------------------------------------";
-        POINTS_DESCRIPTION = ChatColor.STRIKETHROUGH + "----------------------------------------" +
-                ChatColor.GOLD + "" + ChatColor.BOLD + "\nHow is the game Scored:" +
-                ChatColor.RESET + "\nFor winning: " + ChatColor.GOLD + (int)(plugin.getConfig().getInt("hunterTagFirstPoints") * multiplier) + ChatColor.RESET + " points per team (" +
-                ChatColor.GOLD + (int)(plugin.getConfig().getInt("hunterTagFirstPoints") * multiplier/TEAM_SIZE) + ChatColor.RESET + " points per player" +
-                "\nFor tagging a player, the hunter gets: " + ChatColor.GOLD + (int)(plugin.getConfig().getInt("tagPoints") * multiplier) + ChatColor.RESET + " points" +
-                ChatColor.GOLD + " -" + (int)(plugin.getConfig().getInt("tagPointsDropoff") * multiplier) + ChatColor.RESET + " points for every 10 seconds that passes" +
-                "\nFor tagging all players, the hunter gets: " + ChatColor.GOLD + (int)(plugin.getConfig().getInt("allTagPoints") * multiplier) + ChatColor.RESET + " points" +
-                ChatColor.GOLD + " -" + (int)(plugin.getConfig().getInt("allTagPointsDropoff") * multiplier) + ChatColor.RESET + " points for every 10 seconds that passes" +
-                "\nFor every 10 seconds you survive as a runner: " + ChatColor.GOLD + (int)(plugin.getConfig().getInt("survivalPoints") * multiplier) + ChatColor.RESET + " points" +
-                "\nFor surviving to the end of the round as a runner: " + ChatColor.GOLD + (int)(plugin.getConfig().getInt("fullSurvivalPoints") * multiplier) + ChatColor.RESET + " points" +
-                ChatColor.STRIKETHROUGH + "\n----------------------------------------";
-
-
     }
 
     @Override
@@ -119,15 +97,6 @@ public class StartGameCommand implements CommandExecutor {
         Tag.roundWins = new HashMap<>();
         gameStageHandler = new GameStageHandler(plugin, currentHunters, hunterRounds);
 
-
-
-        getServer().getPluginManager().registerEvents(new PlayerDamageListener(), plugin);
-        //getServer().getPluginManager().registerEvents(new PlayerJoinListener(plugin), plugin);
-        //getServer().getPluginManager().registerEvents(new PlayerLeaveListener(plugin), plugin);
-        getServer().getPluginManager().registerEvents(new PlayerMoveListener(currentHunters, hunterRounds, plugin), plugin);
-        //getServer().getPluginManager().registerEvents(new PlayerMoveListener(), plugin);
-
-        //Bukkit.broadcastMessage(ChatColor.LIGHT_PURPLE + "Battlebox is Starting Soon. Get Ready!");
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, ()-> {
             for(Player p:Bukkit.getOnlinePlayers()) {
                 if(handler.getPlayerTeam(p) != null) {
@@ -148,7 +117,7 @@ public class StartGameCommand implements CommandExecutor {
 
 
         int totalSeconds = plugin.getConfig().getInt("PregameTime");
-        pregameCountdown = new Countdown((JavaPlugin)plugin,
+        pregameCountdown = new Countdown(plugin,
                 //should be 80
                 totalSeconds,
                 //Timer Start
@@ -163,8 +132,8 @@ public class StartGameCommand implements CommandExecutor {
 
                 //Each Second
                 (t) -> {
-                    if(t.getSecondsLeft() == totalSeconds - 1) Bukkit.broadcastMessage(GAME_DESCRIPTION);
-                    if(t.getSecondsLeft() == totalSeconds - 11) Bukkit.broadcastMessage(POINTS_DESCRIPTION);
+                    if(t.getSecondsLeft() == totalSeconds - 1) Bukkit.broadcastMessage(GameMessages.gameDescription());
+                    if(t.getSecondsLeft() == totalSeconds - 11) Bukkit.broadcastMessage(GameMessages.pointsDescription(plugin));
 
                     if(t.getSecondsLeft() == 15 || t.getSecondsLeft() == 10 || t.getSecondsLeft() == 5) {
                         for(Player p:Bukkit.getOnlinePlayers()) {

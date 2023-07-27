@@ -1,6 +1,7 @@
 package io.github.cardsandhuskers.tag.objects;
 
 import io.github.cardsandhuskers.tag.Tag;
+import io.github.cardsandhuskers.teams.objects.Team;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -9,10 +10,7 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 
-import static io.github.cardsandhuskers.tag.Tag.gameState;
-import static io.github.cardsandhuskers.tag.Tag.handler;
-import static io.github.cardsandhuskers.tag.Tag.round;
-import static io.github.cardsandhuskers.tag.Tag.timeVar;
+import static io.github.cardsandhuskers.tag.Tag.*;
 
 public class Placeholder extends PlaceholderExpansion {
     private final Tag plugin;
@@ -82,6 +80,54 @@ public class Placeholder extends PlaceholderExpansion {
             }
             return "-";
         }
+        if(s.equalsIgnoreCase("yourRunners")) {
+            Team team = handler.getPlayerTeam((Player) p);
+            if(team == null) return "";
+
+            int aliveOpps = 0;
+            for(Player opp:plugin.startGameCommand.gameStageHandler.getAliveRunners()) {
+                if(handler.getPlayerTeam(opp) == team) aliveOpps++;
+            }
+            String str = team.color + team.getTeamName() + ChatColor.RESET + "  ";
+            for(int i = 0; i < aliveOpps; i++) {
+                str += "⬤ ";
+            }
+            for(int i = aliveOpps; i < team.getSize() - 1; i++) {
+                str += "◯ ";
+            }
+
+            return str;
+
+        }
+        if(s.equalsIgnoreCase("oppRunners")) {
+            Team team = handler.getPlayerTeam((Player) p);
+            if(team == null) return "";
+            Team hunterTeam = null;
+
+            Team[][] matchups = plugin.startGameCommand.gameStageHandler.getMatchups();
+            if(matchups == null) return "";
+            for (Team[] matchup : matchups) {
+                if (matchup[0].equals(team)) hunterTeam = matchup[1];
+                if (matchup[1].equals(team)) hunterTeam = matchup[0];
+            }
+            if(hunterTeam != null) {
+                int aliveOpps = 0;
+                for(Player opp:plugin.startGameCommand.gameStageHandler.getAliveRunners()) {
+                    if(handler.getPlayerTeam(opp) == hunterTeam) aliveOpps++;
+                }
+                String str = hunterTeam.color + hunterTeam.getTeamName() + ChatColor.RESET + "  ";
+                for(int i = 0; i < aliveOpps; i++) {
+                    str += "⬤ ";
+                }
+                for(int i = aliveOpps; i < hunterTeam.getSize() - 1; i++) {
+                    str += "◯ ";
+                }
+
+                return str;
+            }
+            return "";
+        }
+
 
         String[] values = s.split("_");
         //playerKills, totalKills, wins
@@ -118,6 +164,8 @@ public class Placeholder extends PlaceholderExpansion {
                     color = handler.getPlayerTeam(Bukkit.getPlayer(holder.name)).color;
                 return color + holder.name + ChatColor.RESET + ": " + holder.wins;
             }
+
+
         } catch (Exception e) {
             StackTraceElement[] trace = e.getStackTrace();
             String str = "";

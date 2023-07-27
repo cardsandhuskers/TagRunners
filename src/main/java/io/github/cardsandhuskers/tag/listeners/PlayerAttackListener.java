@@ -3,7 +3,6 @@ package io.github.cardsandhuskers.tag.listeners;
 import io.github.cardsandhuskers.tag.Tag;
 import io.github.cardsandhuskers.tag.handlers.PlayerDeathHandler;
 import io.github.cardsandhuskers.teams.objects.Team;
-import org.bukkit.GameMode;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,8 +15,8 @@ import java.util.HashMap;
 import static io.github.cardsandhuskers.tag.Tag.handler;
 
 public class PlayerAttackListener implements Listener {
-    private HashMap<Team, Player> currentHunters;
-    private ArrayList<Player> alivePlayers;
+    private final HashMap<Team, Player> currentHunters;
+    private final ArrayList<Player> alivePlayers;
     Tag plugin;
     PlayerDeathHandler deathHandler;
     public PlayerAttackListener(Tag plugin, HashMap<Team, Player> currentHunters, ArrayList<Player> alivePlayers, PlayerDeathHandler deathHandler) {

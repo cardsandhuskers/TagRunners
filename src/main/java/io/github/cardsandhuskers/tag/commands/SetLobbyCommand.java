@@ -9,7 +9,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 public class SetLobbyCommand implements CommandExecutor {
-    private Tag plugin;
+    private final Tag plugin;
 
     public SetLobbyCommand(Tag plugin) {
         this.plugin = plugin;
