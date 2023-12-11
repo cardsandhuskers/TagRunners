@@ -111,8 +111,8 @@ public class PlayerDeathHandler {
                     p.sendMessage("[+" + ChatColor.YELLOW + "" + ChatColor.BOLD + (int)playerPoints + ChatColor.RESET + "] Your hunter eliminated the opposing runners first!");
                     if(roundWins.containsKey(p)) roundWins.put(p, roundWins.get(p) + 1);
                     else roundWins.put(p, 1);
-                    winningTeams.add(attackerTeam);
                 }
+                winningTeams.add(attackerTeam);
 
                 allEliminated.put(handler.getPlayerTeam(attacked), true);
             }
