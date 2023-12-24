@@ -2,33 +2,40 @@ package io.github.cardsandhuskers.tag.handlers;
 
 import io.github.cardsandhuskers.tag.Tag;
 import io.github.cardsandhuskers.teams.objects.Team;
+import io.github.cardsandhuskers.tag.objects.Stats;
+import io.github.cardsandhuskers.tag.objects.Countdown;
+import static io.github.cardsandhuskers.tag.Tag.*;
+// import io.github.cardsandhuskers.tag.handlers.GameStageHandler.totalRounds;
+
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import static io.github.cardsandhuskers.tag.Tag.*;
 
 public class PlayerDeathHandler {
     Tag plugin;
     GameStageHandler gameStageHandler;
     Team[][] matchups;
+    Stats stats;
     //have all runners on a team been killed
     HashMap<Team, Boolean> allEliminated;
     ArrayList<Player> aliveRunners;
     ArrayList<Team> winningTeams;
     Team unopposed;
-    public PlayerDeathHandler(Tag plugin, GameStageHandler gameStageHandler, ArrayList<Player> aliveRunners) {
+    Countdown roundTimer;
+
+    public PlayerDeathHandler(Tag plugin, GameStageHandler gameStageHandler, ArrayList<Player> aliveRunners, Stats stats, Countdown roundTimer) {
         this.plugin = plugin;
         this.gameStageHandler = gameStageHandler;
         this.aliveRunners = aliveRunners;
         allEliminated = new HashMap<>();
         winningTeams = new ArrayList<>();
+        this.stats = stats;
+        this.roundTimer = roundTimer;
     }
-
 
     /**
      *
@@ -132,7 +139,9 @@ public class PlayerDeathHandler {
             if(!exists) gameStageHandler.roundOver();
         }
 
-
+        //round, playerName, playerTeam, attackerName, attackerTeam
+        String entryLine = GameStageHandler.totalRounds + "," + attacked.getName() + "," + handler.getPlayerTeam(attacked) + "," + attacker.getName() + "," + handler.getPlayerTeam(attacker).getTeamName() + "," + roundTimer.getSecondsLeft();
+        stats.addEntry(entryLine);
     }
 
     public void setMatchups(Team[][] matchups) {

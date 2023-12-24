@@ -1,15 +1,18 @@
 package io.github.cardsandhuskers.tag.handlers;
 
 import io.github.cardsandhuskers.tag.Tag;
+import io.github.cardsandhuskers.tag.Tag.GameState;
 import io.github.cardsandhuskers.tag.listeners.*;
 import io.github.cardsandhuskers.tag.objects.Bracket;
 import io.github.cardsandhuskers.tag.objects.Countdown;
 import io.github.cardsandhuskers.tag.objects.GameMessages;
 import io.github.cardsandhuskers.teams.objects.Team;
+import io.github.cardsandhuskers.tag.objects.Stats;
+
+
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,7 +23,7 @@ import static org.bukkit.Bukkit.getServer;
 
 public class GameStageHandler {
     private final Tag plugin;
-    int totalRounds = 0;
+    static int totalRounds = 0;
     private final HashMap<Team, Player> currentHunters;
     private final Bracket bracket;
     private Team[][] matchups;
@@ -31,15 +34,18 @@ public class GameStageHandler {
     private final PlayerDeathHandler deathHandler;
     private ArenaHandler arenaHandler;
     private final GlowHandler glowHandler;
+    private Stats stats;
+    private HashMap<Player,Player> attackersMap;
     //private GlowPacketListener glowPacketListener;
 
-    public GameStageHandler(Tag plugin, HashMap<Team, Player> currentHunters, HashMap<Player, Integer> hunterRounds) {
+    public GameStageHandler(Tag plugin, HashMap<Team, Player> currentHunters, HashMap<Player, Integer> hunterRounds, Stats stats) {
         this.plugin = plugin;
         this.currentHunters = currentHunters;
         this.hunterRounds = hunterRounds;
         aliveRunners = new ArrayList<>();
+        this.attackersMap = new HashMap<Player,Player>();
         bracket = new Bracket();
-        this.deathHandler = new PlayerDeathHandler(plugin, this, aliveRunners);
+        this.deathHandler = new PlayerDeathHandler(plugin, this, aliveRunners, stats,roundTimer);
         getServer().getPluginManager().registerEvents(new PlayerAttackListener(plugin, currentHunters, aliveRunners, deathHandler), plugin);
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(plugin), plugin);
         getServer().getPluginManager().registerEvents(new PlayerLeaveListener(plugin, deathHandler), plugin);
@@ -49,6 +55,9 @@ public class GameStageHandler {
 
         glowHandler = new GlowHandler(plugin, aliveRunners, matchups, currentHunters, this);
         getServer().getPluginManager().registerEvents(new PlayerClickListener(glowHandler), plugin);
+        
+        
+        this.stats = stats;
     }
 
 
@@ -82,6 +91,7 @@ public class GameStageHandler {
         deathHandler.resetEliminations();
         currentHunters.clear();
         aliveRunners.clear();
+        attackersMap.clear();
         deathHandler.unopposed = null;
         arenaHandler.teleportPlayers(true, matchups, deathHandler, currentHunters, hunterRounds);
         hunterTimer();
@@ -117,6 +127,7 @@ public class GameStageHandler {
                                 if(hunterRounds.get(p) > 0) {
                                     currentHunters.put(t, p);
                                     break;
+                                    //timevar
                                 }
                             }
                         }
@@ -178,6 +189,8 @@ public class GameStageHandler {
                     arenaHandler.teleportPlayers(false, matchups, deathHandler, currentHunters, hunterRounds);
 
                     glowHandler.enableGlow();
+
+
                 },
 
                 //Timer End
@@ -189,6 +202,7 @@ public class GameStageHandler {
                             p.setSwimming(false);
                         }
                     }
+
                     arenaHandler.deleteWalls();
                     roundActive();
                 },
@@ -258,9 +272,14 @@ public class GameStageHandler {
      */
     public void roundOver() {
         double survivalPoints = plugin.getConfig().getInt("fullSurvivalPoints") * multiplier;
-        for(Player p:aliveRunners) {
-            handler.getPlayerTeam(p).addTempPoints(p, survivalPoints);
-            glowHandler.takeRunnerVision(p);
+        for(Player surviver:aliveRunners) {
+            handler.getPlayerTeam(surviver).addTempPoints(surviver, survivalPoints);
+            glowHandler.takeRunnerVision(surviver);
+
+            Player attacker = currentHunters.get(handler.getPlayerTeam(surviver));
+        //round, playerName, playerTeam, attackerName, attackerTeam, timeOfDeath
+        String entryLine = totalRounds + "," + surviver.getName() + "," + handler.getPlayerTeam(surviver) + "," + attacker.getName() + "," + handler.getPlayerTeam(attacker).getTeamName() + ",Survived";
+            stats.addEntry(entryLine);
         }
 
         GameMessages.roundOverAnnouncements(aliveRunners, currentHunters, (int)survivalPoints, deathHandler.winningTeams, matchups);

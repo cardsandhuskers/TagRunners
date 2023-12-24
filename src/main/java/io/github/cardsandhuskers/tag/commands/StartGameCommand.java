@@ -7,6 +7,8 @@ import io.github.cardsandhuskers.tag.listeners.PlayerMoveListener;
 import io.github.cardsandhuskers.tag.objects.Countdown;
 import io.github.cardsandhuskers.tag.objects.GameMessages;
 import io.github.cardsandhuskers.teams.objects.Team;
+import io.github.cardsandhuskers.tag.objects.Stats;
+
 import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -28,8 +30,12 @@ public class StartGameCommand implements CommandExecutor {
     public HashMap<Player, Integer> hunterRounds;
     public ArrayList<Player> aliveRunners;
     public GameStageHandler gameStageHandler;
+    private Stats stats;
+
+
     public StartGameCommand(Tag plugin) {
         this.plugin = plugin;
+        this.stats = new Stats("Round, Player, Hunter, Killed");
     }
 
     @Override
@@ -95,7 +101,7 @@ public class StartGameCommand implements CommandExecutor {
         hunterRounds = new HashMap<>();
         Tag.tags = new HashMap<>();
         Tag.roundWins = new HashMap<>();
-        gameStageHandler = new GameStageHandler(plugin, currentHunters, hunterRounds);
+        gameStageHandler = new GameStageHandler(plugin, currentHunters, hunterRounds, stats);
 
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, ()-> {
             for(Player p:Bukkit.getOnlinePlayers()) {
