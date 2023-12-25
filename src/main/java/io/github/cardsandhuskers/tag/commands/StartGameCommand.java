@@ -35,7 +35,7 @@ public class StartGameCommand implements CommandExecutor {
 
     public StartGameCommand(Tag plugin) {
         this.plugin = plugin;
-        this.stats = new Stats("Round, Player, Hunter, Killed");
+        this.stats = new Stats("Round,Player,Team,HunterName,hunterTeam,timeOfDeath");
     }
 
     @Override

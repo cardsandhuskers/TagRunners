@@ -25,16 +25,14 @@ public class PlayerDeathHandler {
     ArrayList<Player> aliveRunners;
     ArrayList<Team> winningTeams;
     Team unopposed;
-    Countdown roundTimer;
 
-    public PlayerDeathHandler(Tag plugin, GameStageHandler gameStageHandler, ArrayList<Player> aliveRunners, Stats stats, Countdown roundTimer) {
+    public PlayerDeathHandler(Tag plugin, GameStageHandler gameStageHandler, ArrayList<Player> aliveRunners, Stats stats) {
         this.plugin = plugin;
         this.gameStageHandler = gameStageHandler;
         this.aliveRunners = aliveRunners;
         allEliminated = new HashMap<>();
         winningTeams = new ArrayList<>();
         this.stats = stats;
-        this.roundTimer = roundTimer;
     }
 
     /**
@@ -140,7 +138,7 @@ public class PlayerDeathHandler {
         }
 
         //round, playerName, playerTeam, attackerName, attackerTeam
-        String entryLine = GameStageHandler.totalRounds + "," + attacked.getName() + "," + handler.getPlayerTeam(attacked) + "," + attacker.getName() + "," + handler.getPlayerTeam(attacker).getTeamName() + "," + roundTimer.getSecondsLeft();
+        String entryLine = GameStageHandler.totalRounds + "," + attacked.getName() + "," + handler.getPlayerTeam(attacked).getTeamName() + "," + attacker.getName() + "," + handler.getPlayerTeam(attacker).getTeamName() + "," + Tag.timeVar;
         stats.addEntry(entryLine);
     }
 

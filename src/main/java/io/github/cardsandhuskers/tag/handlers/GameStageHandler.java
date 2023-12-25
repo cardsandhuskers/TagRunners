@@ -45,7 +45,7 @@ public class GameStageHandler {
         aliveRunners = new ArrayList<>();
         this.attackersMap = new HashMap<Player,Player>();
         bracket = new Bracket();
-        this.deathHandler = new PlayerDeathHandler(plugin, this, aliveRunners, stats,roundTimer);
+        this.deathHandler = new PlayerDeathHandler(plugin, this, aliveRunners, stats);
         getServer().getPluginManager().registerEvents(new PlayerAttackListener(plugin, currentHunters, aliveRunners, deathHandler), plugin);
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(plugin), plugin);
         getServer().getPluginManager().registerEvents(new PlayerLeaveListener(plugin, deathHandler), plugin);
@@ -276,9 +276,18 @@ public class GameStageHandler {
             handler.getPlayerTeam(surviver).addTempPoints(surviver, survivalPoints);
             glowHandler.takeRunnerVision(surviver);
 
-            Player attacker = currentHunters.get(handler.getPlayerTeam(surviver));
-        //round, playerName, playerTeam, attackerName, attackerTeam, timeOfDeath
-        String entryLine = totalRounds + "," + surviver.getName() + "," + handler.getPlayerTeam(surviver) + "," + attacker.getName() + "," + handler.getPlayerTeam(attacker).getTeamName() + ",Survived";
+            Team survivorTeam = handler.getPlayerTeam(surviver);
+            Team hunterTeam = null;
+
+            for (Team[] matchup : matchups) {
+                if (matchup[0].equals(survivorTeam)) hunterTeam = matchup[1];
+                if (matchup[1].equals(survivorTeam)) hunterTeam = matchup[0];
+            }
+
+            Player hunter = currentHunters.get(hunterTeam);
+
+            //round, playerName, playerTeam, attackerName, attackerTeam, timeOfDeath
+            String entryLine = totalRounds + "," + surviver.getName() + "," + handler.getPlayerTeam(surviver).getTeamName() + "," + hunter.getName() + "," + hunterTeam.getTeamName() + ",Survived";
             stats.addEntry(entryLine);
         }
 
@@ -334,6 +343,7 @@ public class GameStageHandler {
                 //Timer Start
                 () -> {
                     gameState = GameState.GAME_OVER;
+                    stats.writeToFile(plugin.getDataFolder().toPath().toString(), "tagStats");
                 },
 
                 //Timer End
