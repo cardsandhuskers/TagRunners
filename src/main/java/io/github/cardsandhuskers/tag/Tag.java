@@ -45,8 +45,6 @@ public final class Tag extends JavaPlugin {
 
         handler = Teams.handler;
 
-
-
         getConfig().options().copyDefaults();
         saveDefaultConfig();
 
