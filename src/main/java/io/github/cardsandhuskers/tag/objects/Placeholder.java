@@ -167,6 +167,8 @@ public class Placeholder extends PlaceholderExpansion {
 
 
         } catch (Exception e) {
+            e.printStackTrace();
+
             StackTraceElement[] trace = e.getStackTrace();
             String str = "";
             for(StackTraceElement element:trace) str += element.toString() + "\n";

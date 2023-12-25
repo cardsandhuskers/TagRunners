@@ -300,7 +300,7 @@ public class GameStageHandler {
 
         round++;
         if(round > totalRounds) {
-            Bukkit.broadcastMessage("GAME OVER!");
+            //Bukkit.broadcastMessage("GAME OVER!");
             gameOver();
         } else {
             startRound();

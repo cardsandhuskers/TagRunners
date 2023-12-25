@@ -9,10 +9,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.*;
 
 import static io.github.cardsandhuskers.tag.Tag.*;
 import static io.github.cardsandhuskers.teams.Teams.handler;
@@ -199,9 +196,12 @@ public class GameMessages {
             }
         }
 
+        System.out.println("winners: " + winningTeams);
+        System.out.println("matchups: " + Arrays.deepToString(matchups));
         Bukkit.broadcastMessage("\nRound Summary: ");
         for(int i = 0; i <matchups.length; i++) {
             boolean gameFound = false;
+
             for(Team t: winningTeams) {
                 if(matchups[i][0].equals(t)) {
                     Bukkit.broadcastMessage(StringUtils.center(matchups[i][0].color + ChatColor.BOLD + matchups[i][0].getTeamName() + ChatColor.RESET + "  vs.  " + ChatColor.DARK_GRAY + matchups[i][1].getTeamName(), 45));

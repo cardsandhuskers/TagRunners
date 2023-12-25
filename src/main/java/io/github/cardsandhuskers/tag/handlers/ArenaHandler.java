@@ -73,7 +73,9 @@ public class ArenaHandler {
                 for(int z = -8; z <= 8; z++) {
                     Location loc = new Location(l.getWorld(), l.getX() + x, l.getY() + y, l.getZ() + z);
                     if(isConcrete(loc.getBlock().getType())) {
-                        loc.getBlock().setType(getConcrete(t.color));
+                        try {
+                            loc.getBlock().setType(getConcrete(t.color));
+                        } catch (Exception e) {e.printStackTrace();}
                     }
                 }
             }
@@ -127,8 +129,9 @@ public class ArenaHandler {
             if(kit) {
                 GameMessages.announceOpponents(teamA, teamB);
                 GameMessages.announceOpponents(teamB, teamA);
-                recolorHunterRoom(aRunners, teamA);
-                recolorHunterRoom(bRunners, teamB);
+                if(deathHandler.unopposed != teamA) recolorHunterRoom(bRunners, teamB);
+                if(deathHandler.unopposed != teamB) recolorHunterRoom(aRunners, teamA);
+
             }
             else {
                 GameMessages.preroundAnnouncements(teamA, teamB, hunterRounds.get(currentHunters.get(teamA))-1, currentHunters);
@@ -168,20 +171,20 @@ public class ArenaHandler {
         };
     }
     private Material getConcrete(String color) {
-        switch (color) {
-            case "§2": return Material.GREEN_CONCRETE;
-            case "§3": return Material.CYAN_CONCRETE;
-            case "§5": return Material.PURPLE_CONCRETE;
-            case "§6": return Material.ORANGE_CONCRETE;
-            case "§7": return Material.LIGHT_GRAY_CONCRETE;
-            case "§8": return Material.BLACK_CONCRETE;
-            case "§9": return Material.BLUE_CONCRETE;
-            case "§a": return Material.LIME_CONCRETE;
-            case "§b": return Material.LIGHT_BLUE_CONCRETE;
-            case "§c": return Material.RED_CONCRETE;
-            case "§d": return Material.PINK_CONCRETE;
-            case "§e": return Material.YELLOW_CONCRETE;
-            default: return Material.WHITE_CONCRETE;
-        }
+        return switch (color) {
+            case "§2" -> Material.GREEN_CONCRETE;
+            case "§3" -> Material.CYAN_CONCRETE;
+            case "§5" -> Material.PURPLE_CONCRETE;
+            case "§6" -> Material.ORANGE_CONCRETE;
+            case "§7" -> Material.LIGHT_GRAY_CONCRETE;
+            case "§8" -> Material.BLACK_CONCRETE;
+            case "§9" -> Material.BLUE_CONCRETE;
+            case "§a" -> Material.LIME_CONCRETE;
+            case "§b" -> Material.LIGHT_BLUE_CONCRETE;
+            case "§c" -> Material.RED_CONCRETE;
+            case "§d" -> Material.PINK_CONCRETE;
+            case "§e" -> Material.YELLOW_CONCRETE;
+            default -> Material.WHITE_CONCRETE;
+        };
     }
 }

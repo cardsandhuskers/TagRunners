@@ -132,8 +132,8 @@ public class StartGameCommand implements CommandExecutor {
 
                 //Each Second
                 (t) -> {
-                    if(t.getSecondsLeft() == totalSeconds - 1) Bukkit.broadcastMessage(GameMessages.gameDescription());
-                    if(t.getSecondsLeft() == totalSeconds - 11) Bukkit.broadcastMessage(GameMessages.pointsDescription(plugin));
+                    if(t.getSecondsLeft() == totalSeconds - 2) Bukkit.broadcastMessage(GameMessages.gameDescription());
+                    if(t.getSecondsLeft() == totalSeconds - 12) Bukkit.broadcastMessage(GameMessages.pointsDescription(plugin));
 
                     if(t.getSecondsLeft() == 15 || t.getSecondsLeft() == 10 || t.getSecondsLeft() == 5) {
                         for(Player p:Bukkit.getOnlinePlayers()) {
