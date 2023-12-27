@@ -346,7 +346,19 @@ public class GameStageHandler {
                 //Timer Start
                 () -> {
                     gameState = GameState.GAME_OVER;
-                    killStats.writeToFile(plugin.getDataFolder().toPath().toString(), "tagStats");
+
+                    int eventNum = -1;
+                    try {
+                        eventNum = Bukkit.getPluginManager().getPlugin("LobbyPlugin")
+                            .getConfig().getInt("eventNum");
+                    }   catch (Exception e) 
+                        {eventNum = 1;}
+
+                    String fileName = "tagKillStats" + Integer.toString(eventNum);
+                    killStats.writeToFile(plugin.getDataFolder().toPath().toString(), fileName);
+
+                    fileName = "tagWinStats" + Integer.toString(eventNum);
+                    winStats.writeToFile(plugin.getDataFolder().toPath().toString(), fileName);
                 },
 
                 //Timer End
