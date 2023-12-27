@@ -16,6 +16,7 @@ import org.bukkit.event.HandlerList;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.UUID;
 
 import static io.github.cardsandhuskers.tag.Tag.*;
 import static io.github.cardsandhuskers.teams.Teams.handler;
@@ -34,18 +35,18 @@ public class GameStageHandler {
     private final PlayerDeathHandler deathHandler;
     private ArenaHandler arenaHandler;
     private final GlowHandler glowHandler;
-    private Stats stats;
-    private HashMap<Player,Player> attackersMap;
+    private Stats killStats;
+    private Stats winStats;
+
     //private GlowPacketListener glowPacketListener;
 
-    public GameStageHandler(Tag plugin, HashMap<Team, Player> currentHunters, HashMap<Player, Integer> hunterRounds, Stats stats) {
+    public GameStageHandler(Tag plugin, HashMap<Team, Player> currentHunters, HashMap<Player, Integer> hunterRounds, Stats killStats) {
         this.plugin = plugin;
         this.currentHunters = currentHunters;
         this.hunterRounds = hunterRounds;
         aliveRunners = new ArrayList<>();
-        this.attackersMap = new HashMap<Player,Player>();
         bracket = new Bracket();
-        this.deathHandler = new PlayerDeathHandler(plugin, this, aliveRunners, stats);
+        this.deathHandler = new PlayerDeathHandler(plugin, this, aliveRunners, killStats);
         getServer().getPluginManager().registerEvents(new PlayerAttackListener(plugin, currentHunters, aliveRunners, deathHandler), plugin);
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(plugin), plugin);
         getServer().getPluginManager().registerEvents(new PlayerLeaveListener(plugin, deathHandler), plugin);
@@ -57,7 +58,8 @@ public class GameStageHandler {
         getServer().getPluginManager().registerEvents(new PlayerClickListener(glowHandler), plugin);
         
         
-        this.stats = stats;
+        this.killStats = killStats;
+        this.winStats = new Stats("Round,winningPlayer,winningTeam,losingTeam");
     }
 
 
@@ -91,7 +93,6 @@ public class GameStageHandler {
         deathHandler.resetEliminations();
         currentHunters.clear();
         aliveRunners.clear();
-        attackersMap.clear();
         deathHandler.unopposed = null;
         arenaHandler.teleportPlayers(true, matchups, deathHandler, currentHunters, hunterRounds);
         hunterTimer();
@@ -288,8 +289,10 @@ public class GameStageHandler {
 
             //round, playerName, playerTeam, attackerName, attackerTeam, timeOfDeath
             String entryLine = totalRounds + "," + surviver.getName() + "," + handler.getPlayerTeam(surviver).getTeamName() + "," + hunter.getName() + "," + hunterTeam.getTeamName() + ",Survived";
-            stats.addEntry(entryLine);
+            killStats.addEntry(entryLine);
         }
+
+        updateWinStats();
 
         GameMessages.roundOverAnnouncements(aliveRunners, currentHunters, (int)survivalPoints, deathHandler.winningTeams, matchups);
         glowHandler.disableGlow();
@@ -343,7 +346,7 @@ public class GameStageHandler {
                 //Timer Start
                 () -> {
                     gameState = GameState.GAME_OVER;
-                    stats.writeToFile(plugin.getDataFolder().toPath().toString(), "tagStats");
+                    killStats.writeToFile(plugin.getDataFolder().toPath().toString(), "tagStats");
                 },
 
                 //Timer End
@@ -401,6 +404,36 @@ public class GameStageHandler {
     }
     public ArrayList<Player> getAliveRunners() {
         return aliveRunners;
+    }
+
+    /**
+     * Adds the teams that won to the winStats object,
+     * which is used to store the teams/players that won
+     * each round. This function should be called before
+     * stats have been cleared for the start of a new round.
+     * 
+     * @author J. Scotty Solomon
+     */
+    private void updateWinStats() {
+        //Round,winningPlayer,winningTeam,losingTeam
+        ArrayList<Team> winningTeams = deathHandler.getWinningTeams();
+
+        for(Team team: winningTeams) {
+            Team loserTeam = null;
+
+            for (Team[] matchup : matchups) {
+                if (matchup[0].equals(team)) loserTeam = matchup[1];
+                if (matchup[1].equals(team)) loserTeam = matchup[0];
+            }
+
+            ArrayList<Player> players = team.getOnlinePlayers();
+
+            for(Player player: players) {
+                String lineEntry = totalRounds + "," + player.getName() + "," + team.getTeamName() + "," + loserTeam.getTeamName();
+                winStats.addEntry(lineEntry);
+            }
+        }
+        
     }
 
 }

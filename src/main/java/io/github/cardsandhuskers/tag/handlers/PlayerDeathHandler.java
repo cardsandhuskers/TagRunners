@@ -13,26 +13,28 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.UUID;
 
 
 public class PlayerDeathHandler {
     Tag plugin;
     GameStageHandler gameStageHandler;
     Team[][] matchups;
-    Stats stats;
+    Stats killStats;
+    Stats wins;
     //have all runners on a team been killed
     HashMap<Team, Boolean> allEliminated;
     ArrayList<Player> aliveRunners;
     ArrayList<Team> winningTeams;
     Team unopposed;
 
-    public PlayerDeathHandler(Tag plugin, GameStageHandler gameStageHandler, ArrayList<Player> aliveRunners, Stats stats) {
+    public PlayerDeathHandler(Tag plugin, GameStageHandler gameStageHandler, ArrayList<Player> aliveRunners, Stats killStats) {
         this.plugin = plugin;
         this.gameStageHandler = gameStageHandler;
         this.aliveRunners = aliveRunners;
         allEliminated = new HashMap<>();
         winningTeams = new ArrayList<>();
-        this.stats = stats;
+        this.killStats = killStats;
     }
 
     /**
@@ -138,8 +140,9 @@ public class PlayerDeathHandler {
         }
 
         //round, playerName, playerTeam, attackerName, attackerTeam
-        String entryLine = GameStageHandler.totalRounds + "," + attacked.getName() + "," + handler.getPlayerTeam(attacked).getTeamName() + "," + attacker.getName() + "," + handler.getPlayerTeam(attacker).getTeamName() + "," + Tag.timeVar;
-        stats.addEntry(entryLine);
+        String entryLine = GameStageHandler.totalRounds + "," + attacked.getName() + "," + handler.getPlayerTeam(attacked).getTeamName() + "," 
+            + attacker.getName() + "," + handler.getPlayerTeam(attacker).getTeamName() + "," + Tag.timeVar;
+            killStats.addEntry(entryLine);
     }
 
     public void setMatchups(Team[][] matchups) {
@@ -157,5 +160,13 @@ public class PlayerDeathHandler {
      */
     public void removePlayer(Player p) {
         aliveRunners.remove(p);
+    }
+
+    /**
+     * Gets list of winning teams from current round.
+     * @return winning team list
+     */
+    public ArrayList<Team> getWinningTeams() {
+        return winningTeams;
     }
 }

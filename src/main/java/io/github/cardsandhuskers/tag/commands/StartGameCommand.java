@@ -30,12 +30,12 @@ public class StartGameCommand implements CommandExecutor {
     public HashMap<Player, Integer> hunterRounds;
     public ArrayList<Player> aliveRunners;
     public GameStageHandler gameStageHandler;
-    private Stats stats;
+    private Stats killStats;
 
 
     public StartGameCommand(Tag plugin) {
         this.plugin = plugin;
-        this.stats = new Stats("Round,Player,Team,HunterName,hunterTeam,timeOfDeath");
+        this.killStats = new Stats("Round,Player,Team,HunterName,hunterTeam,timeOfDeath");
     }
 
     @Override
@@ -101,7 +101,7 @@ public class StartGameCommand implements CommandExecutor {
         hunterRounds = new HashMap<>();
         Tag.tags = new HashMap<>();
         Tag.roundWins = new HashMap<>();
-        gameStageHandler = new GameStageHandler(plugin, currentHunters, hunterRounds, stats);
+        gameStageHandler = new GameStageHandler(plugin, currentHunters, hunterRounds, killStats);
 
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, ()-> {
             for(Player p:Bukkit.getOnlinePlayers()) {
