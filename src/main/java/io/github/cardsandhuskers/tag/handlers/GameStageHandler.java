@@ -288,8 +288,10 @@ public class GameStageHandler {
             Player hunter = currentHunters.get(hunterTeam);
 
             //round, playerName, playerTeam, attackerName, attackerTeam, timeOfDeath
-            String entryLine = totalRounds + "," + surviver.getName() + "," + handler.getPlayerTeam(surviver).getTeamName() + "," + hunter.getName() + "," + hunterTeam.getTeamName() + ",Survived";
-            killStats.addEntry(entryLine);
+            if(hunter != null) {
+                String entryLine = round + "," + surviver.getName() + "," + handler.getPlayerTeam(surviver).getTeamName() + "," + hunter.getName() + "," + hunterTeam.getTeamName() + ",Survived";
+                killStats.addEntry(entryLine);
+            }
         }
 
         updateWinStats();
@@ -359,18 +361,27 @@ public class GameStageHandler {
 
                     fileName = "tagWinStats" + Integer.toString(eventNum);
                     winStats.writeToFile(plugin.getDataFolder().toPath().toString(), fileName);
+
+                    try {
+                        plugin.statCalculator.calculateStats();
+                    } catch (Exception e) {
+                        StackTraceElement[] trace = e.getStackTrace();
+                        String str = "";
+                        for(StackTraceElement element:trace) str += element.toString() + "\n";
+                        plugin.getLogger().severe("ERROR Calculating Stats!\n" + str);
+                    }
                 },
 
                 //Timer End
                 () -> {
-                    try {
+                    /*try {
                         plugin.statCalculator.saveRecords();
                     } catch (IOException e) {
                         StackTraceElement[] trace = e.getStackTrace();
                         String str = "";
                         for(StackTraceElement element:trace) str += element.toString() + "\n";
                         plugin.getLogger().severe("ERROR Calculating Stats!\n" + str);
-                    }
+                    }*/
                     HandlerList.unregisterAll(plugin);
 
                     try {

@@ -3,178 +3,215 @@ package io.github.cardsandhuskers.tag.objects;
 import io.github.cardsandhuskers.tag.Tag;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
-
-import static io.github.cardsandhuskers.tag.Tag.roundWins;
-import static io.github.cardsandhuskers.tag.Tag.tags;
-import static io.github.cardsandhuskers.teams.Teams.handler;
 
 public class StatCalculator {
     private final Tag plugin;
     private ArrayList<PlayerStatsHolder> playerStatsHolders;
-    private ArrayList<SingleGameKillsHolder> sgKillsHolders;
-
+    private ArrayList<EventStatsHolder> eventStatsHolders;
+    int currentEvent;
 
     public StatCalculator(Tag plugin) {
         this.plugin = plugin;
+        try {currentEvent = Bukkit.getPluginManager().getPlugin("LobbyPlugin").getConfig().getInt("eventNum");}
+        catch (Exception e) {currentEvent = 1;}
 
     }
 
     public void calculateStats() throws Exception {
 
         HashMap<String, PlayerStatsHolder> playerStatsMap = new HashMap<>();
-        sgKillsHolders = new ArrayList<>();
-        playerStatsHolders = new ArrayList<>();
+        FileReader reader;
+        //run through kills
+        for(int i = 1; i <= currentEvent; i++) {
+            try {
+                reader = new FileReader(plugin.getDataFolder() + "/" + "tagKillStats" + i + ".csv");
+            } catch (IOException e) {
+                plugin.getLogger().warning("Stats file not found!");
+                continue;
+            }
+            String[] headers = {"Round", "Player", "Team", "HunterName", "hunterTeam", "timeOfDeath"};
 
+            CSVFormat.Builder builder = CSVFormat.Builder.create();
+            builder.setHeader(headers);
+            CSVFormat format = builder.build();
 
-        FileReader reader = null;
-        try {
-            reader = new FileReader(plugin.getDataFolder() + "/stats.csv");
-        } catch (IOException e) {
-            plugin.getLogger().warning("Stats file not found!");
-            return;
-        }
-
-        String[] headers = {"Event", "Team", "Name", "Kills", "Wins"};
-        CSVFormat.Builder builder = CSVFormat.Builder.create();
-        builder.setHeader(headers);
-        CSVFormat format = builder.build();
-
-        CSVParser parser;
-        try {
+            CSVParser parser;
             parser = new CSVParser(reader, format);
-        } catch (IOException e) {
-            throw new Exception(e);
-        }
-        List<CSVRecord> recordList = parser.getRecords();
 
-        try {
+            List<CSVRecord> recordList = parser.getRecords();
             reader.close();
-        } catch (IOException e) {
-            throw new Exception(e);
-        }
 
-        //maps records to each event number
-        HashMap<Integer, ArrayList<CSVRecord>> recordsMap = new HashMap<>();
-        int totalEvents = 0;
-        for (CSVRecord r : recordList) {
-            //skip header
-            if (r.getRecordNumber() == 1) continue;
+            for(CSVRecord r:recordList) {
+                if (r.getRecordNumber() == 1) continue;
 
-            //have totalEvents be value of "last event"
-            totalEvents = Math.max(totalEvents, Integer.parseInt(r.get(0)));
+                String died = r.get(1);
+                String killer = r.get(3);
 
-            //if event number isn't in map, put new arraylist in spot at map
-            if(!recordsMap.containsKey(Integer.valueOf(r.get(0)))) recordsMap.put(Integer.valueOf(r.get(0)), new ArrayList<>());
-            //append to arraylist
-            recordsMap.get(Integer.valueOf(r.get(0))).add(r);
-        }
-        for(int i = 1; i <= totalEvents; i++) {
-            if(!recordsMap.containsKey(i)) continue;
-            for(CSVRecord r:recordsMap.get(i)) {
-                String name = r.get(2);
-                if(playerStatsMap.containsKey(name)) {
-                    PlayerStatsHolder h = playerStatsMap.get(name);
-                    h.kills += Integer.parseInt(r.get(3));
-                    h.wins += Integer.parseInt(r.get(4));
+                if (playerStatsMap.containsKey(killer)) {
+                    playerStatsMap.get(killer).addKill(i, died);
+
                 } else {
-                    PlayerStatsHolder h = new PlayerStatsHolder(name);
-                    h.kills += Integer.parseInt(r.get(3));
-                    h.wins += Integer.parseInt(r.get(4));
-                    playerStatsMap.put(name, h);
+                    PlayerStatsHolder statsHolder = new PlayerStatsHolder(killer);
+                    statsHolder.addKill(i, died);
+                    playerStatsMap.put(killer, statsHolder);
                 }
-                SingleGameKillsHolder kh = new SingleGameKillsHolder();
-                kh.name = name;
-                kh.kills = Integer.parseInt(r.get(3));
-                kh.eventNum = Integer.parseInt(r.get(0));
-                sgKillsHolders.add(kh);
+
+                if (playerStatsMap.containsKey(died)) {
+                    playerStatsMap.get(died).addDeath(i, killer);
+                } else {
+                    PlayerStatsHolder statsHolder = new PlayerStatsHolder(died);
+                    statsHolder.addDeath(i, killer);
+                    playerStatsMap.put(died, statsHolder);
+                }
             }
         }
+
+        for(int i = 1; i <= currentEvent; i++) {
+            try {
+                reader = new FileReader(plugin.getDataFolder() + "/" + "tagWinStats" + i + ".csv");
+            } catch (IOException e) {
+                plugin.getLogger().warning("Stats file not found!");
+                continue;
+            }
+            String[] headers = {"Round", "winningPlayer", "winningTeam", "losingTeam"};
+
+            CSVFormat.Builder builder = CSVFormat.Builder.create();
+            builder.setHeader(headers);
+            CSVFormat format = builder.build();
+
+            CSVParser parser;
+            parser = new CSVParser(reader, format);
+
+            List<CSVRecord> recordList = parser.getRecords();
+            reader.close();
+
+            for(CSVRecord r:recordList) {
+                if (r.getRecordNumber() == 1) continue;
+
+                String winner = r.get(1);
+                String loser = r.get(3);
+
+                if (playerStatsMap.containsKey(winner)) {
+                    playerStatsMap.get(winner).addWin(i, loser);
+
+                } else {
+                    PlayerStatsHolder statsHolder = new PlayerStatsHolder(winner);
+                    statsHolder.addWin(i, loser);
+                    playerStatsMap.put(winner, statsHolder);
+                }
+            }
+        }
+
         playerStatsHolders = new ArrayList<>(playerStatsMap.values());
 
-    }
+        eventStatsHolders = new ArrayList<>();
+        for(PlayerStatsHolder psh: playerStatsHolders) eventStatsHolders.addAll(psh.getEventKills());
 
-    public void saveRecords() throws IOException {
-
-        FileWriter writer = new FileWriter("plugins/Tag/stats.csv", true);
-        FileReader reader = new FileReader("plugins/Tag/stats.csv");
-
-        String[] headers = {"Event", "Team", "Name", "Kills", "Wins"};
-
-        CSVFormat.Builder builder = CSVFormat.Builder.create();
-        builder.setHeader(headers);
-        CSVFormat format = builder.build();
-
-        CSVParser parser = new CSVParser(reader, format);
-
-        if(!parser.getRecords().isEmpty()) {
-            format = CSVFormat.DEFAULT;
-        }
-
-        CSVPrinter printer = new CSVPrinter(writer, format);
-
-        int eventNum;
-        try {eventNum = Bukkit.getPluginManager().getPlugin("LobbyPlugin").getConfig().getInt("eventNum");} catch (Exception e) {eventNum = 1;}
-        //printer.printRecord(currentGame);
-        for(Player p:Bukkit.getOnlinePlayers()) {
-            if(p == null) continue;
-            if(handler.getPlayerTeam(p) == null) continue;
-
-            int tagNum = 0;
-            if(tags.containsKey(p)) tagNum = tags.get(p);
-
-            int wins = 0;
-            if(roundWins.containsKey(p)) wins = roundWins.get(p);
-
-            printer.printRecord(eventNum, handler.getPlayerTeam(p).getTeamName(), p.getDisplayName(), tagNum, wins);
-        }
-        writer.close();
-        try {
-            plugin.statCalculator.calculateStats();
-        } catch (Exception e) {
-            StackTraceElement[] trace = e.getStackTrace();
-            String str = "";
-            for(StackTraceElement element:trace) str += element.toString() + "\n";
-            plugin.getLogger().severe("ERROR Calculating Stats!\n" + str);
-        }
 
     }
 
-
-    public ArrayList<PlayerStatsHolder> getStatsHolders(PlayerStatsComparator.SortType sortType) {
+    public PlayerStatsHolder getStatsHolder(PlayerStatsComparator.SortType sortType, int place) {
         ArrayList<PlayerStatsHolder> psh = new ArrayList<>(playerStatsHolders);
-
-        Comparator PlayerStatsCompare = new PlayerStatsComparator(sortType);
-        psh.sort(PlayerStatsCompare);
+        psh.sort(new PlayerStatsComparator(sortType));
         Collections.reverse(psh);
-        return psh;
+        if(place > psh.size()) return null;
+        else return  psh.get(place-1);
     }
 
-    public ArrayList<SingleGameKillsHolder> getSGKillsHolders() {
-        ArrayList<SingleGameKillsHolder> sgkh = new ArrayList<>(sgKillsHolders);
-
-        Comparator SGKHComparator = new SGKHComparator();
-        sgkh.sort(SGKHComparator);
-        Collections.reverse(sgkh);
-        return sgkh;
+    public EventStatsHolder getEventStatsHolder(PlayerStatsComparator.SortType sortType, int place) {
+        ArrayList<EventStatsHolder> psh = new ArrayList<>(eventStatsHolders);
+        psh.sort(new EventStatsComparator(sortType));
+        Collections.reverse(psh);
+        if(place > psh.size()) return null;
+        else return  psh.get(place-1);
     }
-
-
 
     public class PlayerStatsHolder {
-        int kills = 0;
-        int wins = 0;
+        HashMap<Integer, ArrayList<String>> kills, deaths, wins;
         String name;
         public PlayerStatsHolder(String name) {
             this.name = name;
+            kills = new HashMap<>();
+            deaths = new HashMap<>();
+            wins = new HashMap<>();
+        }
+
+        public void addKill(int event, String killedPlayer) {
+            if(kills.containsKey(event)) kills.get(event).add(killedPlayer);
+            else {
+                ArrayList<String> newKills = new ArrayList<>();
+                newKills.add(killedPlayer);
+                kills.put(event, newKills);
+            }
+        }
+
+        public void addDeath(int event, String killer) {
+            if(deaths.containsKey(event)) deaths.get(event).add(killer);
+            else {
+                ArrayList<String> newDeaths = new ArrayList<>();
+                newDeaths.add(killer);
+                deaths.put(event, newDeaths);
+            }
+        }
+
+        public void addWin(int event, String opponent) {
+            if(wins.containsKey(event)) wins.get(event).add(opponent);
+            else {
+                ArrayList<String> newDeaths = new ArrayList<>();
+                newDeaths.add(opponent);
+                wins.put(event, newDeaths);
+            }
+        }
+
+        public ArrayList<EventStatsHolder> getEventKills() {
+            ArrayList<EventStatsHolder> eventStats = new ArrayList<>();
+            for (int i = 1; i <= currentEvent; i++) {
+                int eventWins = 0;
+                int eventKills = 0;
+                boolean exists = false;
+
+                if (kills.containsKey(i)) {
+                    eventKills = kills.get(i).size();
+                    exists = true;
+                }
+                if (wins.containsKey(i)) {
+                    eventWins = wins.get(i).size();
+                    exists = true;
+                }
+                if(exists) {
+                    eventStats.add(new EventStatsHolder(name, i, eventKills, eventWins));
+                }
+            }
+            return eventStats;
+        }
+
+
+        public int getKills() {
+            int sum = 0;
+            for(Integer event: kills.keySet()) {
+                sum += kills.get(event).size();
+            }
+            return sum;
+        }
+        public int getDeaths() {
+            int sum = 0;
+            for(Integer event: deaths.keySet()) {
+                sum += deaths.get(event).size();
+            }
+            return sum;
+        }
+        public int getWins() {
+            int sum = 0;
+            for(Integer event: wins.keySet()) {
+                sum += wins.get(event).size();
+            }
+            return sum;
         }
     }
 
@@ -185,14 +222,12 @@ public class StatCalculator {
         }
         public int compare(PlayerStatsHolder h1, PlayerStatsHolder h2) {
             if(sortType == SortType.KILLS) {
-                int compare = Integer.compare(h1.kills, h2.kills);
+                int compare = Integer.compare(h1.getKills(), h2.getKills());
                 if(compare == 0) h1.name.compareTo(h2.name);
-                if(compare == 0) compare = 1;
                 return  compare;
             } else {
-                int compare = Integer.compare(h1.wins, h2.wins);
+                int compare = Integer.compare(h1.getWins(), h2.getWins());
                 if(compare == 0) compare = h1.name.compareTo(h2.name);
-                if(compare == 0) compare = 1;
                 return  compare;
             }
         }
@@ -203,18 +238,36 @@ public class StatCalculator {
         }
     }
 
-    public class SingleGameKillsHolder {
+    public class EventStatsHolder {
         String name;
-        int eventNum;
-        int kills;
+        int eventNum, kills, wins;
+        public EventStatsHolder(String name, int eventNum, int kills, int wins) {
+            this.name = name;
+            this.eventNum = eventNum;
+            this.kills = kills;
+            this.wins = wins;
+        }
     }
 
-    class SGKHComparator implements Comparator<SingleGameKillsHolder> {
-        public int compare(SingleGameKillsHolder kh1, SingleGameKillsHolder kh2) {
-            int compare = Integer.compare(kh1.kills, kh2.kills);
-            if(compare == 0) compare = kh1.name.compareTo(kh2.name);
-            if(compare == 0) compare = 1;
-            return compare;
+    class EventStatsComparator implements Comparator<EventStatsHolder> {
+        public PlayerStatsComparator.SortType sortType;
+
+        public EventStatsComparator(PlayerStatsComparator.SortType sortType) {
+            this.sortType = sortType;
+        }
+        public int compare(EventStatsHolder kh1, EventStatsHolder kh2) {
+
+            if(sortType == PlayerStatsComparator.SortType.KILLS) {
+                int compare = Integer.compare(kh1.kills, kh2.kills);
+                if(compare == 0) kh1.name.compareTo(kh2.name);
+                if(compare == 0) compare = 1;
+                return  compare;
+            } else {
+                int compare = Integer.compare(kh1.wins, kh2.wins);
+                if(compare == 0) compare = kh1.name.compareTo(kh2.name);
+                if(compare == 0) compare = 1;
+                return  compare;
+            }
         }
     }
 }

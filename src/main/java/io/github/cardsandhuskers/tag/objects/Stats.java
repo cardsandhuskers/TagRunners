@@ -113,21 +113,4 @@ public class Stats {
     public String toString() {
         return getCSV();
     }
-
-    public static void main(String[] args) {
-        Stats stat = new Stats("One,Two,Three");
-
-        stat.addEntry("1,test,test");
-        stat.addEntry("2,test,test");
-        stat.addEntry("3,test,test");
-        stat.addEntry("4,test,test");
-        stat.addEntry("5,test,test");
-        stat.addEntry("6,test,test");
-
-        System.out.println(stat.getCSV());
-
-        System.out.println("Writing to file");
-
-        stat.writeToFile(".","test");
-    }
 }

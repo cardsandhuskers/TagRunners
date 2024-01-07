@@ -134,8 +134,10 @@ public class ArenaHandler {
 
             }
             else {
-                GameMessages.preroundAnnouncements(teamA, teamB, hunterRounds.get(currentHunters.get(teamA))-1, currentHunters);
-                GameMessages.preroundAnnouncements(teamB, teamA, hunterRounds.get(currentHunters.get(teamB))-1, currentHunters);
+                try {
+                    GameMessages.preroundAnnouncements(teamA, teamB, hunterRounds.get(currentHunters.get(teamA)) - 1, currentHunters);
+                    GameMessages.preroundAnnouncements(teamB, teamA, hunterRounds.get(currentHunters.get(teamB)) - 1, currentHunters);
+                } catch (Exception e) {e.printStackTrace();}
             }
 
             arenaCounter++;

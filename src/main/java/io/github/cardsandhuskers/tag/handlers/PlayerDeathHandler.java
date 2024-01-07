@@ -140,7 +140,7 @@ public class PlayerDeathHandler {
         }
 
         //round, playerName, playerTeam, attackerName, attackerTeam
-        String entryLine = GameStageHandler.totalRounds + "," + attacked.getName() + "," + handler.getPlayerTeam(attacked).getTeamName() + "," 
+        String entryLine = round + "," + attacked.getName() + "," + handler.getPlayerTeam(attacked).getTeamName() + ","
             + attacker.getName() + "," + handler.getPlayerTeam(attacker).getTeamName() + "," + Tag.timeVar;
             killStats.addEntry(entryLine);
     }

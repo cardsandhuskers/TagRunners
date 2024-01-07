@@ -133,38 +133,35 @@ public class Placeholder extends PlaceholderExpansion {
         //playerKills, totalKills, wins
         // lb pos
         //playerKills_1
+
         try {
+            int place = Integer.parseInt(values[1]);
+
             if (values[0].equalsIgnoreCase("playerKills")) {
-                ArrayList<StatCalculator.SingleGameKillsHolder> killsHolders = plugin.statCalculator.getSGKillsHolders();
-                if(Integer.parseInt(values[1]) > killsHolders.size()) return  "";
-                StatCalculator.SingleGameKillsHolder holder = killsHolders.get(Integer.parseInt(values[1]) - 1);
+                StatCalculator.EventStatsHolder holder = plugin.statCalculator.getEventStatsHolder(StatCalculator.PlayerStatsComparator.SortType.KILLS, place);
+                if(holder == null) return "";
 
                 String color = "";
                 if (handler.getPlayerTeam(Bukkit.getPlayer(holder.name)) != null)
                     color = handler.getPlayerTeam(Bukkit.getPlayer(holder.name)).color;
                 return color + holder.name + ChatColor.RESET + " Event " + holder.eventNum + ": " + holder.kills;
-
-
-            }
-            if (values[0].equalsIgnoreCase("totalKills")) {
-                ArrayList<StatCalculator.PlayerStatsHolder> killsHolders = plugin.statCalculator.getStatsHolders(StatCalculator.PlayerStatsComparator.SortType.KILLS);
-                if(Integer.parseInt(values[1]) > killsHolders.size()) return  "";
-                StatCalculator.PlayerStatsHolder holder = killsHolders.get(Integer.parseInt(values[1]) - 1);
-                String color = "";
-                if (handler.getPlayerTeam(Bukkit.getPlayer(holder.name)) != null)
-                    color = handler.getPlayerTeam(Bukkit.getPlayer(holder.name)).color;
-                return color + holder.name + ChatColor.RESET + ": " + holder.kills;
-            }
-            if (values[0].equalsIgnoreCase("wins")) {
-                ArrayList<StatCalculator.PlayerStatsHolder> killsHolders = plugin.statCalculator.getStatsHolders(StatCalculator.PlayerStatsComparator.SortType.WINS);
-                if(Integer.parseInt(values[1]) > killsHolders.size()) return  "";
-                StatCalculator.PlayerStatsHolder holder = killsHolders.get(Integer.parseInt(values[1]) - 1);
-                String color = "";
-                if (handler.getPlayerTeam(Bukkit.getPlayer(holder.name)) != null)
-                    color = handler.getPlayerTeam(Bukkit.getPlayer(holder.name)).color;
-                return color + holder.name + ChatColor.RESET + ": " + holder.wins;
             }
 
+            StatCalculator.PlayerStatsComparator.SortType sortType = StatCalculator.PlayerStatsComparator.SortType.WINS;
+            if (values[0].equalsIgnoreCase("totalKills")) sortType = StatCalculator.PlayerStatsComparator.SortType.KILLS;
+            else if (values[0].equalsIgnoreCase("wins")) sortType = StatCalculator.PlayerStatsComparator.SortType.WINS;
+
+            StatCalculator.PlayerStatsHolder holder = plugin.statCalculator.getStatsHolder(sortType, place);
+            if(holder == null) return "";
+
+            int value = 0;
+            if (values[0].equalsIgnoreCase("totalKills")) value = holder.getKills();
+            else if (values[0].equalsIgnoreCase("wins")) value = holder.getWins();
+
+            String color = "";
+            if (handler.getPlayerTeam(Bukkit.getPlayer(holder.name)) != null)
+                color = handler.getPlayerTeam(Bukkit.getPlayer(holder.name)).color;
+            return color + holder.name + ChatColor.RESET + ": " + value;
 
         } catch (Exception e) {
             e.printStackTrace();

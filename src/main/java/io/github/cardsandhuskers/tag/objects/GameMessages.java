@@ -196,23 +196,25 @@ public class GameMessages {
             }
         }
 
-        System.out.println("winners: " + winningTeams);
-        System.out.println("matchups: " + Arrays.deepToString(matchups));
         Bukkit.broadcastMessage("\nRound Summary: ");
         for(int i = 0; i <matchups.length; i++) {
-            boolean gameFound = false;
+            try {
+                boolean gameFound = false;
 
-            for(Team t: winningTeams) {
-                if(matchups[i][0].equals(t)) {
-                    Bukkit.broadcastMessage(StringUtils.center(matchups[i][0].color + ChatColor.BOLD + matchups[i][0].getTeamName() + ChatColor.RESET + "  vs.  " + ChatColor.DARK_GRAY + matchups[i][1].getTeamName(), 45));
-                    gameFound = true;
-                } else if(matchups[i][1].equals(t)){
-                    Bukkit.broadcastMessage(StringUtils.center(ChatColor.DARK_GRAY + matchups[i][0].getTeamName() + ChatColor.RESET + "  vs.  " + matchups[i][1].color + ChatColor.BOLD + matchups[i][1].getTeamName(), 45));
-                    gameFound = true;
+                for (Team t : winningTeams) {
+                    if (matchups[i][0].equals(t)) {
+                        Bukkit.broadcastMessage(StringUtils.center(matchups[i][0].color + ChatColor.BOLD + matchups[i][0].getTeamName() + ChatColor.RESET + "  vs.  " + ChatColor.DARK_GRAY + matchups[i][1].getTeamName(), 45));
+                        gameFound = true;
+                    } else if (matchups[i][1].equals(t)) {
+                        Bukkit.broadcastMessage(StringUtils.center(ChatColor.DARK_GRAY + matchups[i][0].getTeamName() + ChatColor.RESET + "  vs.  " + matchups[i][1].color + ChatColor.BOLD + matchups[i][1].getTeamName(), 45));
+                        gameFound = true;
+                    }
                 }
-            }
-            if(!gameFound) {
-                Bukkit.broadcastMessage(StringUtils.center(matchups[i][0].color + ChatColor.BOLD + matchups[i][0].getTeamName() + ChatColor.RESET + "  vs.  " + matchups[i][1].color + ChatColor.BOLD + matchups[i][1].getTeamName(), 45));
+                if (!gameFound) {
+                    Bukkit.broadcastMessage(StringUtils.center(matchups[i][0].color + ChatColor.BOLD + matchups[i][0].getTeamName() + ChatColor.RESET + "  vs.  " + matchups[i][1].color + ChatColor.BOLD + matchups[i][1].getTeamName(), 45));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
 
